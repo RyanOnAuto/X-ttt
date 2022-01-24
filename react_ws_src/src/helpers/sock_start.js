@@ -4,8 +4,9 @@ import { useEffect } from 'react';
 import io from 'socket.io-client'
 let interval;
 const socket_start = function (settings, object) {
+    
     if(!object.socket){
-    object.socket = io("http://localhost:3001");
+    object.socket = io(app.settings.ws_conf.loc.SOCKET__io.u);
     object.socket.on('connect', function (data) {
         console.log('object.socket connected', data)
         object.socket.emit('new player', { name: settings.curr_user.name});
