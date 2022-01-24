@@ -355,7 +355,7 @@ export default class SetName extends Component {
 //	------------------------	------------------------	------------------------
 
 	end_game () {
-		app.settings.socket && app.settings.socket.disconnect();
+		//app.settings.socket && app.settings.socket.disconnect();
 		this.props.onEndGame();
 	}
 
