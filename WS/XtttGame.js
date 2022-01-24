@@ -2,7 +2,7 @@
 
 // ----	--------------------------------------------	--------------------------------------------	
 // ----	--------------------------------------------	--------------------------------------------	
-
+var connected_users = [];
 // New player has joined
 function onNewPlayer(data) {
 
@@ -17,11 +17,10 @@ function onNewPlayer(data) {
 	// Add new player to the players array
 	players.push(newPlayer);
 	players_avail.push(newPlayer);
-
+	
 	// util.log("looking for pair - uid:"+newPlayer.uid + " ("+newPlayer.name + ")");
-
-	pair_avail_players();
-
+	//pair_avail_players();
+	io.sockets.emit("connected_users", players_avail);
 	// updAdmin("looking for pair - uid:"+p.uid + " ("+p.name + ")");
 
 	// updAdmin("new player connected - uid:"+data.uid + " - "+data.name);
@@ -29,16 +28,46 @@ function onNewPlayer(data) {
 };
 
 // ----	--------------------------------------------	--------------------------------------------	
+function broadcast(data){
+	const dynamicNsp = io.of("http://localhost:3000").on("connection", (socket) => {
+	const newNamespace = socket.nsp; // newNamespace.name === "/dynamic-101"
+	util.log("BroadCast: "+newNamespace);
+	// broadcast to all clients in the given sub-namespace
+	newNamespace.emit(data);
+  });
+}
 
-function pair_avail_players() {
+function updateClients() {
+	io.sockets.emit('update', data.connected_users);
+}
+
+function pair_chalanged_players(p1,p2) {
 
 	if (players_avail.length < 2)
 		return;
 
+	set_game(p1,p2)
 
-	var p1 = players_avail.shift();
-	var p2 = players_avail.shift();
+};
 
+function pair_avail_players() {
+	
+	if (players_avail.filter(function( obj ) {
+        return obj.mode === 'ready'
+      }).length < 2)
+		return;
+
+	var p1 = players_avail.filter(function( obj ) {
+        return obj.mode === 'ready'
+      }).shift();
+	var p2 = players_avail.filter(function( obj ) {
+        return obj.mode === 'ready' && obj.name !== p1.name
+      }).shift();
+	set_game(p1,p2)
+
+};
+
+function set_game(p1,p2){
 	p1.mode = 'm';
 	p2.mode = 's';
 	p1.status = 'paired';
@@ -55,8 +84,7 @@ function pair_avail_players() {
 
 	util.log("connect_new_players - uidM:"+p1.uid + " ("+p1.name + ")  ++  uidS: "+p2.uid + " ("+p2.name+")");
 	// updAdmin("connect_new_players - uidM:"+p1.uid + " ("+p1.name + ")  ++  uidS: "+p2.uid + " ("+p2.name+")");
-
-};
+}
 
 // ----	--------------------------------------------	--------------------------------------------	
 
@@ -80,7 +108,8 @@ function onClientDisconnect() {
 	var removePlayer = this.player;
 	players.splice(players.indexOf(removePlayer), 1);
 	players_avail.splice(players_avail.indexOf(removePlayer), 1);
-
+	util.log(players_avail);
+	io.sockets.emit("connected_users", players_avail);
 
 	if (this.status == "admin") {
 		util.log("Admin has disconnected: "+this.uid);
@@ -103,6 +132,17 @@ set_game_sock_handlers = function (socket) {
 	// util.log("New game player has connected: "+socket.id);
 
 	socket.on("new player", onNewPlayer);
+	socket.on("challenge_player", pair_chalanged_players);
+	socket.on("random_player", function (socket) {
+		util.log("SOCKET"+players_avail)
+		for(let player = 0; player < players_avail.length;player++){
+			util.log("Player "+ pair_avail_players[player] )
+			if(players_avail[player].name == socket.name){
+				players_avail[player].mode = 'ready';
+			}
+		}
+		pair_avail_players();
+	});
 
 	socket.on("ply_turn", onTurn);
 

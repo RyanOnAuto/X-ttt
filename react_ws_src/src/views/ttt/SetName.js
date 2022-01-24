@@ -1,4 +1,6 @@
+import app from 'ampersand-app'
 import React, {Component} from 'react'
+import socket_start from '../../helpers/sock_start'
 
 export default class SetName extends Component {
 
@@ -34,8 +36,16 @@ export default class SetName extends Component {
 		// const { name } = this.refs
 		// const { onSetName } = this.props
 		// onSetName(name.value.trim())
-
 		this.props.onSetName(this.refs.name.value.trim())
+		socket_start(app.settings,this);
+		this.state = {
+			settings: app.settings,
+			userdata: JSON.parse(localStorage.getItem("connected_users")).filter(function( obj ) {
+				return obj.name !== localStorage.getItem("username");
+			  }),
+			socketid: this.socket.id
+		}
+		
 	}
 
 }

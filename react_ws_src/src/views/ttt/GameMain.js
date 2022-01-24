@@ -26,16 +26,27 @@ export default class SetName extends Component {
 		]
 
 
-		if (this.props.game_type != 'live')
+		if (this.props.game_type != 'live'){
 			this.state = {
 				cell_vals: {},
 				next_turn_ply: true,
 				game_play: true,
 				game_stat: 'Start game'
 			}
+		}
+		else if(this.props.game_type == 'challange'){
+			this.pair_challenge_players(this.props.pl,this.props.p2);
+			this.state = {
+				cell_vals: {},
+				next_turn_ply: true,
+				game_play: false,
+				game_stat: 'Connecting'
+			}
+		}
 		else {
-			this.sock_start()
-
+			
+			
+			this.pair_random_players()
 			this.state = {
 				cell_vals: {},
 				next_turn_ply: true,
@@ -55,18 +66,31 @@ export default class SetName extends Component {
 //	------------------------	------------------------	------------------------
 //	------------------------	------------------------	------------------------
 
-	sock_start () {
+	pair_random_players () {
+		 app.settings.socket.emit('random_player', { name: app.settings.curr_user.name, ready: true });
+		console.log(app.settings.curr_user.name );
+		app.settings.socket.on('pair_players', function(data) { 
+			console.log('paired with ', data)
 
-		this.socket = io(app.settings.ws_conf.loc.SOCKET__io.u);
-
-		this.socket.on('connect', function(data) { 
-			// console.log('socket connected', data)
-
-			this.socket.emit('new player', { name: app.settings.curr_user.name });
+			this.setState({
+				next_turn_ply: data.mode=='m',
+				game_play: true,
+				game_stat: 'Playing with ' + data.opp.name
+			})
 
 		}.bind(this));
 
-		this.socket.on('pair_players', function(data) { 
+
+		app.settings.socket.on('opp_turn', this.turn_opp_live.bind(this));
+	}
+
+//	------------------------	------------------------	------------------------
+//	------------------------	------------------------	------------------------
+
+	pair_challenge_players (p1,p2) {
+		app.settings.socket.emit('pair_chalanged_players', { p1: p1,p2:p2 });
+
+		app.settings.socket.on('pair_players', function(data) { 
 			// console.log('paired with ', data)
 
 			this.setState({
@@ -78,18 +102,16 @@ export default class SetName extends Component {
 		}.bind(this));
 
 
-		this.socket.on('opp_turn', this.turn_opp_live.bind(this));
-
-
-
+		app.settings.socket.on('opp_turn', this.turn_opp_live.bind(this));
 	}
+
 
 //	------------------------	------------------------	------------------------
 //	------------------------	------------------------	------------------------
 
 	componentWillUnmount () {
 
-		this.socket && this.socket.disconnect();
+		app.settings.socket && app.settings.socket.disconnect();
 	}
 
 //	------------------------	------------------------	------------------------
@@ -229,7 +251,7 @@ export default class SetName extends Component {
 
 		TweenMax.from(this.refs[cell_id], 0.7, {opacity: 0, scaleX:0, scaleY:0, ease: Power4.easeOut})
 
-		this.socket.emit('ply_turn', { cell_id: cell_id });
+		app.settings.socket.emit('ply_turn', { cell_id: cell_id });
 
 		// this.setState({
 		// 	cell_vals: cell_vals,
@@ -309,7 +331,7 @@ export default class SetName extends Component {
 				game_play: false
 			})
 
-			this.socket && this.socket.disconnect();
+			app.settings.socket && app.settings.socket.disconnect();
 
 		} else if (fin) {
 		
@@ -318,7 +340,7 @@ export default class SetName extends Component {
 				game_play: false
 			})
 
-			this.socket && this.socket.disconnect();
+			app.settings.socket && app.settings.socket.disconnect();
 
 		} else {
 			this.props.game_type!='live' && this.state.next_turn_ply && setTimeout(this.turn_comp.bind(this), rand_to_fro(500, 1000));
@@ -333,9 +355,8 @@ export default class SetName extends Component {
 //	------------------------	------------------------	------------------------
 
 	end_game () {
-		this.socket && this.socket.disconnect();
-
-		this.props.onEndGame()
+		app.settings.socket && app.settings.socket.disconnect();
+		this.props.onEndGame();
 	}
 
 

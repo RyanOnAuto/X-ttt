@@ -17,7 +17,7 @@ players_avail = [];
 var port = process.env.PORT || 3001;
 
 server.listen(port, function () {
-	console.log('Server listening at port %d', port);
+	console.log('Server listening at port %d', 3000);
 });
 
 // Routing

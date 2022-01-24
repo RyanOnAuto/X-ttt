@@ -55,11 +55,11 @@ app.extend({
 		is_mobile: false,
 		mobile_type: null,
 		can_app: false,
-
+		socket: null,
 		ws_conf: null,
 
 		curr_user: null,
-
+		connected_users: [],
 		user_ready: false,
 		user_types: [],
 		basket_type: null,
